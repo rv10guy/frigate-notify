@@ -1,0 +1,18 @@
+mqtt:
+  username: "hassio"
+  password: "hassio"
+  host: "192.168.142.2"
+  port: 1883
+  topic: "frigate/events"
+pushover:
+  api_key: "a1dw2su7dmwwpq1g1rp2iruz7hxwut"
+  user_key: "uixuyk7ji1abkxunjgx7241awutdnr"
+frigate_server:
+  host: "https://frigate.wrightfamily.org"
+web_server:
+  url: "https://videoevents.wrightfamily.org"
+log_info:
+  level: "INFO"
+  log_file: "frigatenotify.log"
+  log_to_screen: true
+cooldown_period: 60

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Event Page</title>
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+<style>
+  body {
+      background-color: #e6f7ff;
+  }
+  h1, h3 {
+      color: #00509e;
+  }
+  .btn {
+      background-color: #007fa3;
+      border: none;
+  }
+  .btn:hover {
+      background-color: #00576e;
+  }
+  .btn:active {
+      background-color: #004456;
+  }
+  #event-video {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    margin: 0 auto;
+  }
+</style>
+
+</head>
+<body>
+
+<div class="container" data-event-id="{{ event_id }}"> <!-- Add data-event-id attribute here -->
+  <div class="container">
+    <div class="row">
+      <div class="col-12 text-center my-4">
+        <h1>Event Details</h1>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-6 col-md-6 col-sm-12">
+          <img id="event-image" src="" alt="Event Image" class="img-fluid" onerror="this.onerror=null; this.src='error-image.jpg';">
+      </div>
+      <div class="col-lg-6 col-md-6 col-sm-12">
+          <video id="event-video" controls onerror="this.innerHTML='Failed to load video.';">
+              Your browser does not support the video tag.
+          </video>
+      </div>
+    </div>
+    <div class="row my-4">
+      <div class="col-12 text-center" id="retain-message"></div>
+  </div>
+    <div class="row my-5">
+      <div class="col-12 text-center">
+        <button id="delete-button" class="btn btn-danger mx-2">Delete Event</button>
+        <button id="save-button" class="btn btn-success mx-2">Permanently Save</button>
+      </div>
+    </div>
+    
+    <div id="event-info" class="row my-4">
+      <!-- Event information will be populated here -->
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  var event_id = "{{ event_id }}";
+  
+  document.getElementById('event-image').src = '/api/events/' + event_id + '/snapshot.jpg';
+  document.getElementById('event-video').src = '/api/events/' + event_id + '/clip.mp4';
+
+  document.getElementById('delete-button').addEventListener('click', function() {
+    fetch('/api/proxy/events/' + event_id, {
+      method: 'DELETE'
+    });
+  });
+
+  document.getElementById('save-button').addEventListener('click', function() {
+      fetch('/api/proxy/events/' + event_id + '/retain', {
+        method: 'POST'
+      });
+  });
+  
+  function fetchEventInfo(event_id) {
+    const url = '/api/proxy/events/' + event_id;
+
+    fetch(url)
+    .then(response => {
+        if (!response.ok) {
+            // Redirect to the error page if the status code is not in the 200-299 range
+            window.location.href = '/error';
+        } else {
+            // Otherwise, return the response JSON to process further
+            return response.json();
+        }
+    })
+    .then(data => {
+        if (data) {  // Check if data exists before proceeding to display it
+            displayEventInfo(data);
+        }
+
+        const saveButton = document.getElementById('save-button');
+        const retainMessage = document.getElementById('retain-message');
+        
+        updateButtonAndMessage(data.retain_indefinitely);
+        
+        saveButton.addEventListener('click', function() {
+            // Disable the button to prevent further clicks
+            saveButton.disabled = true;
+            const method = data.retain_indefinitely ? 'DELETE' : 'POST';
+
+            fetch('/api/proxy/events/' + event_id + '/retain', { method: method })
+            .then(() => {
+                // Use setTimeout to wait for 2 seconds before re-fetching the event info
+                setTimeout(() => {
+                    fetchEventInfo(event_id);
+                    // Re-enable the button after the event info has been re-fetched
+                    saveButton.disabled = false;
+                }, 3000);  // 3000 milliseconds = 3 seconds
+            });
+        });
+    })
+    .catch(error => {
+        console.error('There has been a problem with your fetch operation:', error);
+        document.getElementById('event-info').innerHTML = '<div class="col-12 text-danger">Failed to fetch event information. Please try again later.</div>';
+    });
+}
+
+  function updateButtonAndMessage(retainIndefinitely) {
+      const saveButton = document.getElementById('save-button');
+      const retainMessage = document.getElementById('retain-message');
+      
+      if (retainIndefinitely) {
+          saveButton.textContent = 'Do Not Retain Indefinitely';
+          retainMessage.textContent = 'This event is being retained indefinitely.';
+      } else {
+          saveButton.textContent = 'Retain Indefinitely';
+          retainMessage.textContent = '';
+      }
+  }
+
+// Trigger fetchEventInfo when the document is ready
+
+function displayEventInfo(data) {
+  const date = new Date(data.end_time * 1000);
+  const formattedTime = date.toLocaleString();
+  document.querySelector('h1').textContent = `${data.label.charAt(0).toUpperCase() + data.label.slice(1)} (${(data.top_score * 100).toFixed(2)}%) detected on ${data.camera} camera at ${formattedTime}`;
+
+}
+
+fetchEventInfo(event_id);
+</script>
+
+<!-- Bootstrap JS, Popper.js, and jQuery -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>
