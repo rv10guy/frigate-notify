@@ -18,4 +18,4 @@ RUN pip install Flask paho-mqtt requests PyYAML
 EXPOSE 5050
 
 # Command to run the script
-CMD ["python", "frigate_notify.py"]
+CMD ["python", "frigatenotify.py"]

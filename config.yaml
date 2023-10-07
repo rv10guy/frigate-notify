@@ -1,7 +1,7 @@
 mqtt:
-  username: "hassio"
-  password: "hassio"
-  host: "192.168.142.2"
+  username: "mqttbroker"
+  password: "Q8BssZ8WT#d67PWoqrHVe"
+  host: "192.168.142.3"
   port: 1883
   topic: "frigate/events"
 pushover:

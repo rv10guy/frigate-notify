@@ -149,7 +149,7 @@
 function displayEventInfo(data) {
   const date = new Date(data.end_time * 1000);
   const formattedTime = date.toLocaleString();
-  document.querySelector('h1').textContent = `${data.label.charAt(0).toUpperCase() + data.label.slice(1)} (${(data.top_score * 100).toFixed(2)}%) detected on ${data.camera} camera at ${formattedTime}`;
+  document.querySelector('h1').textContent = `${data.label.charAt(0).toUpperCase() + data.label.slice(1)} (${(data.data.top_score * 100).toFixed(2)}%) detected on ${data.camera} camera at ${formattedTime}`;
 
 }
 
