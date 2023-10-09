@@ -20,6 +20,7 @@ def exit_handler():
 def send_healthcheck_ping():
     global last_ping_time
     current_time = datetime.datetime.now()
+    logger.info("Heathcheck Ping called.")
     if last_ping_time is None or (current_time - last_ping_time) >= datetime.timedelta(hours=1):
         logger.info("Healthcheck Ping Sent")
         api_url = f"https://hc-ping.com/{healthchecks_config['uuid']}"
@@ -219,7 +220,7 @@ def on_message(client, userdata, msg):
     timestamp = datetime.datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
     
     current_time = datetime.datetime.now()
-    send_healthcheck_ping()
+    result = send_healthcheck_ping()
 
     if event_type in ["new", "update"]:
         entered_zones = event_data.get("entered_zones", [])
