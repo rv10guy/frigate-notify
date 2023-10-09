@@ -17,6 +17,21 @@ from requests.exceptions import HTTPError, Timeout, ConnectionError
 def exit_handler():
     logger.info("Frigate Notify is exiting.")
 
+def send_healthcheck_ping():
+    global last_ping_time
+    current_time = datetime.datetime.now()
+    if last_ping_time is None or (current_time - last_ping_time) >= datetime.timedelta(hours=1):
+        api_url = f"https://hc-ping.com/{healthchecks_config['uuid']}"
+        try:
+            response = requests.get(api_url)
+            response.raise_for_status()  # This will check for HTTP errors
+            last_ping_time = current_time  # Update the last ping time
+        except requests.RequestException as e:
+            logger.error(f'An error occurred: {e}')
+
+# Call this function at the appropriate place in your script
+send_healthcheck_ping()
+
 def send_pushover_notification(
     token, user, message, 
     ttl=None, attachment=None, html=None, sound=None, 
@@ -88,6 +103,8 @@ def validate_config(config):
         errors.append("MQTT port should be an integer.")
     if not re.match(r'^[\w/]+$', mqtt.get('topic', '')):
         errors.append("MQTT topic should be formatted as an MQTT topic.")
+    if not re.match(r'^[\w/]+$', mqtt.get('alert_topic', '')):
+        errors.append("MQTT topic should be formatted as an MQTT topic.")    
 
     # Validate Pushover section
     pushover = config.get('pushover', {})
@@ -95,6 +112,11 @@ def validate_config(config):
         errors.append("Pushover api_key should be a string.")
     if not isinstance(pushover.get('user_key'), str):
         errors.append("Pushover user_key should be a string.")
+    
+    # Validate Healthchecks section
+    healthchecks = config.get('healthchecks', {})
+    if not isinstance(pushover.get('uuid'), str):
+        errors.append("Healthchecks uuid should be a string.")
 
     # Validate Frigate Server section
     frigate_server = config.get('frigate_server', {})
@@ -199,6 +221,7 @@ def on_message(client, userdata, msg):
     timestamp = datetime.datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
     
     current_time = datetime.datetime.now()
+    send_healthcheck_ping()
 
     if event_type in ["new", "update"]:
         entered_zones = event_data.get("entered_zones", [])
@@ -226,6 +249,13 @@ def on_message(client, userdata, msg):
 
                     logger.info(f"Sending notification for {label} on {camera} camera.")
                     logger.debug(f"Event Data: {event_data}")
+                    mqtt.single(
+                        topic=mqtt_config['alert_topic'],
+                        payload="trigger",
+                        hostname=mqtt_config['host'],
+                        port=mqtt_config['port'],
+                        auth={'username': mqtt_config['username'], 'password': mqtt_config['password']}
+                    )
                     message = f"{label} detected on {camera} camera at {timestamp}."
                     response = send_pushover_notification(
                         token=pushover_config['api_key'],
@@ -269,8 +299,10 @@ frigate_server_config = config['frigate_server']
 web_server_config = config['web_server']
 cooldown_period = config['cooldown_period']
 log_info = config['log_info']
+healthchecks_config = config['healthchecks']
 
 processed_events = set()
+last_ping_time = None
 cooldown_dict = {}  # Initialize the cooldown dictionary
 frigate_server = frigate_server_config['host']
 web_server = web_server_config['url']
