@@ -1,0 +1,21 @@
+mqtt:
+  username: 
+  password: 
+  host: 
+  port: 
+  topic: 
+  alert_topic: 
+pushover:
+  api_key: 
+  user_key: 
+healthchecks:
+  uuid: 
+frigate_server:
+  host: 
+web_server:
+  url: 
+log_info:
+  level: 
+  log_file: 
+  log_to_screen: true
+cooldown_period: 

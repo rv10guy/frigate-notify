@@ -20,7 +20,6 @@ def exit_handler():
 def send_healthcheck_ping():
     global last_ping_time
     current_time = datetime.datetime.now()
-    logger.info("Heathcheck Ping called.")
     if last_ping_time is None or (current_time - last_ping_time) >= datetime.timedelta(hours=1):
         logger.info("Healthcheck Ping Sent")
         api_url = f"https://hc-ping.com/{healthchecks_config['uuid']}"
@@ -35,26 +34,7 @@ def send_pushover_notification(
     token, user, message, 
     ttl=None, attachment=None, html=None, sound=None, 
     timestamp=None, title=None, url=None, url_title=None, **kwargs):
-    """
-    Sends a notification via the Pushover API.
 
-    Parameters:
-        token (str): Your Pushover application token.
-        user (str): The user/group key of the user/group to send the notification to.
-        message (str): The message to send.
-        ttl (int, optional): Time To Live in seconds. Defaults to None.
-        attachment (str, optional): Path to JPEG attachment. Defaults to None.
-        html (int, optional): 1 to enable HTML formatting, 0 to disable. Defaults to None.
-        sound (str, optional): The name of one of the sounds supported by device clients. Defaults to None.
-        timestamp (int, optional): A Unix timestamp of your message's date and time to display to the user. Defaults to None.
-        title (str, optional): The title of the message. Defaults to None.
-        url (str, optional): A supplementary URL to show with your message. Defaults to None.
-        url_title (str, optional): A title for your supplementary URL. Defaults to None.
-        **kwargs: Other optional parameters supported by the Pushover API.
-    
-    Returns:
-        dict: The response from the Pushover API.
-    """
     payload = {
         "token": token,
         "user": user,
@@ -75,17 +55,6 @@ def send_pushover_notification(
 
     response = requests.post("https://api.pushover.net/1/messages.json", data=payload, files=files)
     return response.json()
-
-# Example usage:
-# response = send_pushover_notification(
-#     token='your-app-token',
-#     user='your-user-key',
-#     message='Hello, World!',
-#     ttl=60,
-#     title='Optional Title',
-#     attachment='path_to_image.jpg'
-# )
-# print(response)
 
 def validate_config(config):
     errors = []
