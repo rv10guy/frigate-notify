@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Silence Settings</title>
+</head>
+<body>
+    <h1>Silence Settings</h1>
+    <form action="/set_silence" method="post" id="silence-form">
+        <label for="duration">Silence Duration (minutes):</label>
+        <input type="number" id="duration" name="duration" required><br><br>
+        <input type="checkbox" id="all_cameras" name="camera[]" value="all" onclick="checkAll()">
+        <label for="all_cameras">All Cameras</label><br>
+        {% for camera in cameras %}
+        <div>
+            <input type="checkbox" id="{{ camera }}" name="camera[]" value="{{ camera }}" onclick="uncheckAll()">
+            <label for="{{ camera }}">{{ camera }}</label>
+            {% if camera_settings.get(camera) %}
+                <span>Silenced until {{ camera_settings[camera] }}</span>
+                <a href="{{ url_for('clear_silence', camera_id=camera) }}">Remove Silence</a>
+            {% else %}
+                <span>No silence set</span>
+            {% endif %}
+        </div>
+         {% endfor %}
+        <br><input type="submit" value="Submit">
+    </form>
+    <form action="/clear_all_silence" method="get">
+        <button type="submit">Remove All Silence</button>
+    </form>
+</body>
+<script type="text/javascript">
+    function checkAll() {
+        var allCamerasCheckbox = document.getElementById('all_cameras');
+        var otherCheckboxes = document.querySelectorAll('input[name="camera[]"]:not(#all_cameras)');
+        for (var checkbox of otherCheckboxes) {
+            checkbox.checked = allCamerasCheckbox.checked;
+        }
+    }
+
+    function uncheckAll() {
+        document.getElementById('all_cameras').checked = false;
+    }
+</script>
+</html>

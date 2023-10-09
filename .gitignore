@@ -1,3 +1,5 @@
 frigatenotify.log
 test.py
 Dockerfile
+config.yaml
+silence_settings.db

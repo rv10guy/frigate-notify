@@ -7,11 +7,12 @@ import re
 import requests
 import threading
 import sched
+import sqlite3
 import time
 import yaml
 
 import paho.mqtt.client as mqtt
-from flask import Flask, request, jsonify, render_template, Response
+from flask import Flask, request, jsonify, render_template, Response, redirect, url_for
 from requests.exceptions import HTTPError, Timeout, ConnectionError
 
 def exit_handler():
@@ -107,6 +108,8 @@ def validate_config(config):
     #Validate other fields
     if not isinstance(config.get('cooldown_period'), int):
         errors.append("Cooldown period should be an integer.")
+    if not re.match (r'^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)*$', config.get('database')):
+        errors.append("Log file should be a valid file name.")
 
     if errors:
         print("Configuration errors detected:")
@@ -116,7 +119,7 @@ def validate_config(config):
     else:
         return True
     
-def load_config(config_file='/config/config.yaml'):
+def load_config(config_file='config.yaml'):
     try:
         with open(config_file, 'r') as f:
             return yaml.safe_load(f)
@@ -132,6 +135,60 @@ def load_config(config_file='/config/config.yaml'):
     except yaml.YAMLError as e:
         logger.error(f"Error in configuration file: {e}")
         exit(1)
+
+def initialize_db(db_name):
+    if not os.path.exists(db_name):
+        conn = sqlite3.connect(db_name)
+        c = conn.cursor()
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS silence_settings (
+                camera_id TEXT PRIMARY KEY,
+                silence_until DATETIME
+            )
+        ''')
+        conn.commit()
+        conn.close()
+
+def get_silence_settings(camera_id=None):
+    conn = sqlite3.connect(silence_db)
+    c = conn.cursor()
+    now = datetime.datetime.now()
+    if camera_id:
+        c.execute('SELECT * FROM silence_settings WHERE camera_id = ? AND silence_until > ?', (camera_id, now))
+    else:
+        c.execute('SELECT * FROM silence_settings WHERE silence_until > ?', (now,))
+    settings = c.fetchall()
+    print(f"Silence settings for {camera_id}: {settings}")  # Debugging print statement
+    conn.close()
+    return settings
+
+def set_silence_settings(camera_id, silence_until):
+    try:
+        conn = sqlite3.connect(silence_db)
+        c = conn.cursor()
+        query = '''
+            INSERT OR REPLACE INTO silence_settings
+            (camera_id, silence_until)
+            VALUES (?, ?)
+        '''
+        params = (camera_id, silence_until)
+        c.execute(query, params)
+        print(f"Executed query: {query} with parameters: {params}")  # Log the query and parameters
+        conn.commit()
+    except Exception as e:
+        print(f"Database error: {e}")
+    finally:
+        conn.close()
+
+def clear_silence_settings(camera_id=None):
+    conn = sqlite3.connect(silence_db)
+    c = conn.cursor()
+    if camera_id:
+        c.execute('DELETE FROM silence_settings WHERE camera_id = ?', (camera_id,))
+    else:
+        c.execute('DELETE FROM silence_settings')
+    conn.commit()
+    conn.close()
 
 def connect_to_mqtt():
     backoff_time = 1  # in seconds
@@ -191,6 +248,12 @@ def on_message(client, userdata, msg):
     current_time = datetime.datetime.now()
     result = send_healthcheck_ping()
 
+    # Check silence settings for the camera
+    silence_settings = get_silence_settings(camera)
+    if silence_settings:
+        logger.info(f"Ignoring {label} on {camera} camera due to silence setting.")
+        return  # Exit the function early if the camera is silenced
+
     if event_type in ["new", "update"]:
         entered_zones = event_data.get("entered_zones", [])
 
@@ -217,13 +280,6 @@ def on_message(client, userdata, msg):
 
                     logger.info(f"Sending notification for {label} on {camera} camera.")
                     logger.debug(f"Event Data: {event_data}")
-                    mqtt.single(
-                        topic=mqtt_config['alert_topic'],
-                        payload="trigger",
-                        hostname=mqtt_config['host'],
-                        port=mqtt_config['port'],
-                        auth={'username': mqtt_config['username'], 'password': mqtt_config['password']}
-                    )
                     message = f"{label} detected on {camera} camera at {timestamp}."
                     response = send_pushover_notification(
                         token=pushover_config['api_key'],
@@ -268,12 +324,17 @@ web_server_config = config['web_server']
 cooldown_period = config['cooldown_period']
 log_info = config['log_info']
 healthchecks_config = config['healthchecks']
+silence_db = config['database']
+cameras = config['cameras']
 
 processed_events = set()
 last_ping_time = None
 cooldown_dict = {}  # Initialize the cooldown dictionary
 frigate_server = frigate_server_config['host']
 web_server = web_server_config['url']
+
+# Initialize Database
+initialize_db(silence_db)
 
 # Setup Logging
 logging_level = log_info['level']
@@ -376,6 +437,42 @@ def main():
             return jsonify(response.json())
         else:
             return jsonify({"error": "Failed to fetch event information"}), response.status_code
+    
+    @app.route('/silence_settings')
+    def silence_settings():
+        all_settings = get_silence_settings()
+        camera_settings = {setting[0]: setting[1] for setting in all_settings}
+        print(f"Camera settings: {camera_settings}")  # Debugging print statement
+        return render_template('silence_settings.html', camera_settings=camera_settings, cameras=config['cameras'])
+
+    @app.route('/set_silence', methods=['POST'])
+    def set_silence():
+        duration = int(request.form['duration'])  # Get the duration in minutes from the form
+        cameras = request.form.getlist('camera[]')  # Get the selected cameras from the form as a list
+        print(f"Received duration: {duration}, cameras: {cameras}")  # Debugging print statement
+
+        # Calculate the silence_until datetime based on the current time and duration
+        silence_until = datetime.datetime.now() + datetime.timedelta(minutes=duration)
+
+        # If 'all' is selected or multiple cameras are selected, set the silence settings for all/selected cameras
+        if 'all' in cameras:
+            for cam in config['cameras']:
+                set_silence_settings(cam, silence_until)
+        else:
+            for camera in cameras:
+                set_silence_settings(camera, silence_until)
+
+        return redirect(url_for('silence_settings'))
+
+    @app.route('/clear_silence/<camera_id>')
+    def clear_silence(camera_id):
+        clear_silence_settings(camera_id)
+        return redirect(url_for('silence_settings'))
+    
+    @app.route('/clear_all_silence')
+    def clear_all_silence():
+        clear_silence_settings()
+        return redirect(url_for('silence_settings'))
 
 
     mqtt_thread = threading.Thread(target=connect_to_mqtt)
