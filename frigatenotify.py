@@ -21,16 +21,14 @@ def send_healthcheck_ping():
     global last_ping_time
     current_time = datetime.datetime.now()
     if last_ping_time is None or (current_time - last_ping_time) >= datetime.timedelta(hours=1):
+        logger.info("Healthcheck Ping Sent")
         api_url = f"https://hc-ping.com/{healthchecks_config['uuid']}"
         try:
             response = requests.get(api_url)
             response.raise_for_status()  # This will check for HTTP errors
             last_ping_time = current_time  # Update the last ping time
         except requests.RequestException as e:
-            logger.error(f'An error occurred: {e}')
-
-# Call this function at the appropriate place in your script
-send_healthcheck_ping()
+            logger.error(f'An error occurred: {e} sending healthcheck ping')
 
 def send_pushover_notification(
     token, user, message, 
