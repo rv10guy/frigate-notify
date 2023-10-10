@@ -158,7 +158,6 @@ def get_silence_settings(camera_id=None):
     else:
         c.execute('SELECT * FROM silence_settings WHERE silence_until > ?', (now,))
     settings = c.fetchall()
-    print(f"Silence settings for {camera_id}: {settings}")  # Debugging print statement
     conn.close()
     return settings
 
@@ -173,7 +172,6 @@ def set_silence_settings(camera_id, silence_until):
         '''
         params = (camera_id, silence_until)
         c.execute(query, params)
-        print(f"Executed query: {query} with parameters: {params}")  # Log the query and parameters
         conn.commit()
     except Exception as e:
         print(f"Database error: {e}")
@@ -292,7 +290,6 @@ def on_message(client, userdata, msg):
                         url_title="View Snapshot and Clip",
                         sound="gamelan"
                     )
-                    print(response)
                 else:
                     logger.info(f"Ignoring duplicate event for {label} on {camera} camera.")
                     logger.debug(f"Event Data: {event_data}")
@@ -412,7 +409,9 @@ def main():
 
     @app.route('/event/<event_id>')
     def serve_event_page(event_id):
-        return render_template('event.html', event_id=event_id)
+        all_settings = get_silence_settings()
+        camera_settings = {setting[0]: setting[1] for setting in all_settings}
+        return render_template('event.html', event_id=event_id, camera_settings=camera_settings)
     
     @app.route('/error')
     def error():
@@ -442,14 +441,18 @@ def main():
     def silence_settings():
         all_settings = get_silence_settings()
         camera_settings = {setting[0]: setting[1] for setting in all_settings}
-        print(f"Camera settings: {camera_settings}")  # Debugging print statement
         return render_template('silence_settings.html', camera_settings=camera_settings, cameras=config['cameras'])
+
+    @app.route('/get_camera_silence_settings', methods=['GET'])
+    def get_camera_silence_settings_route():
+        all_settings = get_silence_settings()
+        camera_settings = {setting[0]: setting[1] for setting in all_settings}
+        return jsonify(camera_settings)
 
     @app.route('/set_silence', methods=['POST'])
     def set_silence():
         duration = int(request.form['duration'])  # Get the duration in minutes from the form
         cameras = request.form.getlist('camera[]')  # Get the selected cameras from the form as a list
-        print(f"Received duration: {duration}, cameras: {cameras}")  # Debugging print statement
 
         # Calculate the silence_until datetime based on the current time and duration
         silence_until = datetime.datetime.now() + datetime.timedelta(minutes=duration)
@@ -462,17 +465,17 @@ def main():
             for camera in cameras:
                 set_silence_settings(camera, silence_until)
 
-        return redirect(url_for('silence_settings'))
+        return jsonify({"status": "success", "message": "Silence settings updated successfully"})
 
     @app.route('/clear_silence/<camera_id>')
     def clear_silence(camera_id):
         clear_silence_settings(camera_id)
-        return redirect(url_for('silence_settings'))
+        return jsonify({"status": "success", "message": f"Silence settings cleared for {camera_id}"})
     
     @app.route('/clear_all_silence')
     def clear_all_silence():
         clear_silence_settings()
-        return redirect(url_for('silence_settings'))
+        return jsonify({"status": "success", "message": f"Silence settings cleared for all cameras."})
 
 
     mqtt_thread = threading.Thread(target=connect_to_mqtt)

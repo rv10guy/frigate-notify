@@ -29,11 +29,56 @@
     display: block;
     margin: 0 auto;
   }
+  #silence-status {
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin-bottom: 10px;
+  }
+  #silence-controls {
+      margin-bottom: 10px;
+  }
+  .silence-btn {
+      background-color: #008CBA; /* Blue */
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 5px;
+  }
+  .clear-silence-btn {
+      background-color: #f44336; /* Red */
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+  }
+  #navigate-btn {
+      background-color: #555555; /* Gray */
+      margin-top: 20px;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+  }
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+  /* Add vertical space for screens smaller than 768px (common breakpoint for tablets) */
+  @media (max-width: 768px) {
+      .silence-btn, .clear-silence-btn {
+          margin-bottom: 10px; /* Adjust this value as per your design preference */
+      }
+  }
 </style>
 
 </head>
 <body>
-
 <div class="container" data-event-id="{{ event_id }}"> <!-- Add data-event-id attribute here -->
   <div class="container">
     <div class="row">
@@ -52,16 +97,29 @@
           </video>
       </div>
     </div>
+    <div id="silence-status" class="text-center">
+      <p>Notifications for Camera are on.</p>
+  </div>  
     <div class="row my-4">
       <div class="col-12 text-center" id="retain-message"></div>
   </div>
-    <div class="row my-5">
-      <div class="col-12 text-center">
-        <button id="delete-button" class="btn btn-danger mx-2">Delete Event</button>
-        <button id="save-button" class="btn btn-success mx-2">Permanently Save</button>
-      </div>
+  <div class="row my-5">
+    <div class="col-12 text-center">
+      <button id="delete-button" class="btn btn-danger mx-2">Delete Event</button>
+      <button id="save-button" class="btn btn-success mx-2">Permanently Save</button>
     </div>
-    
+  </div>
+  <div id="silence-controls">
+    <button class="silence-btn" onclick="setSilence(5);">Silence for 5 min</button>
+    <button class="silence-btn" onclick="setSilence(15);">Silence for 15 min</button>
+    <button class="silence-btn" onclick="setSilence(60);">Silence for 1 hr</button>
+    <button class="silence-btn" onclick="setSilence(240);">Silence for 4 hrs</button>
+    <button class="silence-btn" onclick="setSilence(1440);">Silence for 1 day</button>
+    <button class="clear-silence-btn" onclick="clearSilence();">Clear Silence</button>
+  </div>
+  <div class="text-center">
+    <button id="navigate-btn" onclick="navigateToSilenceSettings();">Silence Settings</button>
+  </div>
     <div id="event-info" class="row my-4">
       <!-- Event information will be populated here -->
     </div>
@@ -70,6 +128,82 @@
 
 <script type="text/javascript">
   var event_id = "{{ event_id }}";
+  var camera = "";
+  
+  function fetchSilenceSettings() {
+   
+    // Fetch the latest cameraSettings from the server
+    fetch('/get_camera_silence_settings')
+    .then(response => response.json())
+    .then(latestCameraSettings => {        
+        // Use the latest settings
+        const silenceEndTime = latestCameraSettings[camera];
+        
+        if (silenceEndTime) {
+            const silenceEndDateTime = new Date(silenceEndTime);
+            const now = new Date();
+            
+            if (silenceEndDateTime > now) {
+                const timeRemainingMs = silenceEndDateTime - now;
+                const days = Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeRemainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                
+                document.getElementById('silence-status').innerText = `The camera is silenced until ${silenceEndDateTime.toLocaleString()}, silence will expire in ${days} days, ${hours} hours, ${minutes} minutes.`;
+            } else {
+                document.getElementById('silence-status').innerText = 'This camera is not currently silenced.';
+            }
+        } else {
+            document.getElementById('silence-status').innerText = 'This camera is not currently silenced.';
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching the latest silence settings:', error);
+    });
+}
+
+function setSilence(minutes) {
+    const formData = new FormData();
+    formData.append('duration', minutes);
+    formData.append('camera[]', camera);  // Using camera[] to match the server-side code expecting a list
+    
+    fetch('/set_silence', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            fetchSilenceSettings();
+        } else {
+            console.error('Server returned an error:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    });
+}
+
+function clearSilence() {
+    fetch(`/clear_silence/${camera}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            fetchSilenceSettings();
+        } else {
+            console.error('Server returned an error:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    });
+}
+
+
+
+  function navigateToSilenceSettings() {
+      window.location.href = '/silence_settings';
+  }
   
   document.getElementById('event-image').src = '/api/events/' + event_id + '/snapshot.jpg';
   document.getElementById('event-video').src = '/api/events/' + event_id + '/clip.mp4';
@@ -89,7 +223,7 @@
   function fetchEventInfo(event_id) {
     const url = '/api/proxy/events/' + event_id;
 
-    fetch(url)
+    return fetch(url)
     .then(response => {
         if (!response.ok) {
             // Redirect to the error page if the status code is not in the 200-299 range
@@ -102,6 +236,7 @@
     .then(data => {
         if (data) {  // Check if data exists before proceeding to display it
             displayEventInfo(data);
+            camera = data.camera; 
         }
 
         const saveButton = document.getElementById('save-button');
@@ -123,6 +258,7 @@
                     saveButton.disabled = false;
                 }, 3000);  // 3000 milliseconds = 3 seconds
             });
+
         });
     })
     .catch(error => {
@@ -153,7 +289,11 @@ function displayEventInfo(data) {
 
 }
 
-fetchEventInfo(event_id);
+fetchEventInfo(event_id)
+.then(() => {
+    fetchSilenceSettings();
+    
+});
 </script>
 
 <!-- Bootstrap JS, Popper.js, and jQuery -->

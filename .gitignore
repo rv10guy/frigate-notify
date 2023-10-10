@@ -3,3 +3,4 @@ test.py
 Dockerfile
 config.yaml
 silence_settings.db
+templates/event.html.bak
