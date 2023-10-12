@@ -7,74 +7,170 @@
 <!-- Bootstrap CSS -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
 <style>
-  body {
-      background-color: #e6f7ff;
-  }
-  h1, h3 {
-      color: #00509e;
-  }
-  .btn {
-      background-color: #007fa3;
-      border: none;
-  }
-  .btn:hover {
-      background-color: #00576e;
-  }
-  .btn:active {
-      background-color: #004456;
-  }
-  #event-video {
-    max-width: 100%;
-    max-height: 100%;
-    display: block;
-    margin: 0 auto;
-  }
-  #silence-status {
-            background-color: #f0f0f0;
-            padding: 10px;
-            margin-bottom: 10px;
-  }
-  #silence-controls {
-      margin-bottom: 10px;
-  }
-  .silence-btn {
-      background-color: #008CBA; /* Blue */
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-right: 5px;
-  }
-  .clear-silence-btn {
-      background-color: #f44336; /* Red */
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-  }
-  #navigate-btn {
-      background-color: #555555; /* Gray */
-      margin-top: 20px;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-  }
-  .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+    body {
+        background-color: #2A3D45;
+        color: #333;
+    }
 
-  /* Add vertical space for screens smaller than 768px (common breakpoint for tablets) */
-  @media (max-width: 768px) {
-      .silence-btn, .clear-silence-btn {
-          margin-bottom: 10px; /* Adjust this value as per your design preference */
-      }
-  }
+    h1, h2, h3 {
+        color: #F3F4F6;
+    }
+
+    /* Card and Content Styles */
+    .card {
+        background-color: #F3F4F6;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        border: none;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .card-body h2, .card-body h3 {
+        color: #333;
+    }
+
+    #event-video {
+        max-width: 100%;
+        max-height: 100%;
+        display: block;
+        margin: 0 auto;
+    }
+    #silence-status {
+                background-color: #f0f0f0;
+                padding: 10px;
+                margin-bottom: 10px;
+    }
+    #silence-controls {
+        margin-bottom: 10px;
+    }
+ 
+    /* Button Styles for 'btn' class (Delete and Save buttons) */
+    .btn {
+        border: none;
+        color: #F3F4F6;
+        border-radius: 20px !important;
+    }
+
+    .btn.btn-danger {
+        background-color: rgba(183, 50, 60, 0.5);
+    }
+
+    .btn.btn-danger:hover {
+        background-color: rgba(138, 36, 50, 0.7);
+    }
+
+    .btn.btn-danger:active {
+        background-color: rgba(97, 24, 34, 0.8);
+    }
+
+    .btn.btn-success {
+        background-color: rgba(50, 183, 108, 0.5);
+    }
+
+    .btn.btn-success:hover {
+        background-color: rgba(36, 138, 80, 0.7);
+    }
+
+    .btn.btn-success:active {
+        background-color: rgba(29, 106, 60, 0.8);
+    }
+
+    /* Silence Buttons */
+    .silence-btn {
+        background-color: rgba(183, 50, 60, 0.5);
+        border: none;
+        color: #F3F4F6;
+        border-radius: 20px !important;
+    }
+
+    .silence-btn:hover {
+        background-color: rgba(138, 36, 50, 0.7);
+    }
+
+    .silence-btn:active {
+        background-color: rgba(97, 24, 34, 0.8);
+    }
+
+    /* Clear Silence Button */
+    .clear-silence-btn {
+        background-color: rgba(50, 183, 108, 0.5);
+        border: none;
+        color: #F3F4F6;
+        border-radius: 20px !important;
+    }
+
+    .clear-silence-btn:hover {
+        background-color: rgba(36, 138, 80, 0.7);
+    }
+
+    .clear-silence-btn:active {
+        background-color: rgba(29, 106, 60, 0.8);
+    }
+
+    /* Other buttons that haven't been explicitly styled will default to the silence button style. */
+    button {
+        background-color: rgba(183, 50, 60, 0.5);
+        border: none;
+        color: #F3F4F6;
+        border-radius: 20px !important;
+    }
+
+    button:hover {
+        background-color: rgba(138, 36, 50, 0.7);
+    }
+
+    button:active {
+        background-color: rgba(97, 24, 34, 0.8);
+    }
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .status-container {
+        background-color: #546a73;
+        padding: 20px;
+        margin-top: 20px;   /* Space added between video windows and the status text box */
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    #silence-status, .status-container .row {
+        color: #F3F4F6;
+        background-color: #546a73;
+        margin-top: 0;
+        margin-bottom: 0;
+        padding: 5pxl;
+        text-align: center;
+    }
+
+    #retain-message, .status-container .row {
+        color: #F3F4F6;
+        background-color: #546a73;
+        margin-top: 0;
+        margin-bottom: 0;
+        padding: 5pxl;
+        text-align: center;
+    }
+
+    #silence-controls button {
+        min-width: 70px;
+    }
+
+    #silence-controls .silence-label {
+        color: #F3F4F6;
+        text-align: center;
+        display: block;
+        margin-bottom: 10px; /* Add some spacing between the label and the buttons */
+    }
+
+    /* Add vertical space for screens smaller than 768px (common breakpoint for tablets) */
+    @media (max-width: 768px) {
+        .silence-btn, .clear-silence-btn {
+            margin-bottom: 10px; /* Adjust this value as per your design preference */
+        }
+    }
 </style>
 
 </head>
@@ -97,12 +193,14 @@
           </video>
       </div>
     </div>
-    <div id="silence-status" class="text-center">
-      <p>Notifications for Camera are on.</p>
-  </div>  
-    <div class="row my-4">
-      <div class="col-12 text-center" id="retain-message"></div>
-  </div>
+    <div class="status-container">
+        <div id="silence-status">
+            <!-- Silence status will be updated here via JavaScript -->
+        </div>
+        <div id="retain-message">
+            <!-- Event information will be populated here -->
+        </div>
+    </div>
   <div class="row my-5">
     <div class="col-12 text-center">
       <button id="delete-button" class="btn btn-danger mx-2">Delete Event</button>
@@ -110,12 +208,13 @@
     </div>
   </div>
   <div id="silence-controls">
-    <button class="silence-btn" onclick="setSilence(5);">Silence for 5 min</button>
-    <button class="silence-btn" onclick="setSilence(15);">Silence for 15 min</button>
-    <button class="silence-btn" onclick="setSilence(60);">Silence for 1 hr</button>
-    <button class="silence-btn" onclick="setSilence(240);">Silence for 4 hrs</button>
-    <button class="silence-btn" onclick="setSilence(1440);">Silence for 1 day</button>
-    <button class="clear-silence-btn" onclick="clearSilence();">Clear Silence</button>
+    <div class="silence-label">Silence</div>
+    <button class="silence-btn" onclick="setSilence(5);">5 min</button>
+    <button class="silence-btn" onclick="setSilence(15);">15 min</button>
+    <button class="silence-btn" onclick="setSilence(60);">1 hr</button>
+    <button class="silence-btn" onclick="setSilence(240);">4 hrs</button>
+    <button class="silence-btn" onclick="setSilence(1440);">1 day</button>
+    <button class="clear-silence-btn" onclick="clearSilence();">Clear</button>
   </div>
   <div class="text-center">
     <button id="navigate-btn" onclick="navigateToSilenceSettings();">Silence Settings</button>
@@ -199,28 +298,26 @@ function clearSilence() {
     });
 }
 
-
-
-  function navigateToSilenceSettings() {
-      window.location.href = '/silence_settings';
-  }
+function navigateToSilenceSettings() {
+    window.location.href = '/silence_settings';
+    }
   
-  document.getElementById('event-image').src = '/api/events/' + event_id + '/snapshot.jpg';
-  document.getElementById('event-video').src = '/api/events/' + event_id + '/clip.mp4';
+    document.getElementById('event-image').src = '/api/events/' + event_id + '/snapshot.jpg';
+    document.getElementById('event-video').src = '/api/events/' + event_id + '/clip.mp4';
 
-  document.getElementById('delete-button').addEventListener('click', function() {
-    fetch('/api/proxy/events/' + event_id, {
-      method: 'DELETE'
+    document.getElementById('delete-button').addEventListener('click', function() {
+        fetch('/api/proxy/events/' + event_id, {
+        method: 'DELETE'
+        });
     });
-  });
 
-  document.getElementById('save-button').addEventListener('click', function() {
-      fetch('/api/proxy/events/' + event_id + '/retain', {
-        method: 'POST'
-      });
-  });
+    document.getElementById('save-button').addEventListener('click', function() {
+        fetch('/api/proxy/events/' + event_id + '/retain', {
+            method: 'POST'
+        });
+    });
   
-  function fetchEventInfo(event_id) {
+function fetchEventInfo(event_id) {
     const url = '/api/proxy/events/' + event_id;
 
     return fetch(url)
@@ -256,7 +353,7 @@ function clearSilence() {
                     fetchEventInfo(event_id);
                     // Re-enable the button after the event info has been re-fetched
                     saveButton.disabled = false;
-                }, 3000);  // 3000 milliseconds = 3 seconds
+                }, 100);  // 1000 milliseconds = 1 seconds
             });
 
         });
@@ -267,18 +364,18 @@ function clearSilence() {
     });
 }
 
-  function updateButtonAndMessage(retainIndefinitely) {
-      const saveButton = document.getElementById('save-button');
-      const retainMessage = document.getElementById('retain-message');
-      
-      if (retainIndefinitely) {
-          saveButton.textContent = 'Do Not Retain Indefinitely';
-          retainMessage.textContent = 'This event is being retained indefinitely.';
-      } else {
-          saveButton.textContent = 'Retain Indefinitely';
-          retainMessage.textContent = '';
-      }
-  }
+function updateButtonAndMessage(retainIndefinitely) {
+    const saveButton = document.getElementById('save-button');
+    const retainMessage = document.getElementById('retain-message');
+    
+    if (retainIndefinitely) {
+        saveButton.textContent = 'Do Not Retain Indefinitely';
+        retainMessage.textContent = 'This event is being retained indefinitely.';
+    } else {
+        saveButton.textContent = 'Retain Indefinitely';
+        retainMessage.textContent = 'The event is not being retained.';
+    }
+}
 
 // Trigger fetchEventInfo when the document is ready
 

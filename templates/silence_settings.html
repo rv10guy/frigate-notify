@@ -2,33 +2,197 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Silence Settings</title>
+    <!-- Include Bootstrap CSS for responsive design -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Silence Settings</h1>
-    <form action="/set_silence" method="post" id="silence-form">
-        <label for="duration">Silence Duration (minutes):</label>
-        <input type="number" id="duration" name="duration" required><br><br>
-        <input type="checkbox" id="all_cameras" name="camera[]" value="all" onclick="checkAll()">
-        <label for="all_cameras">All Cameras</label><br>
-        {% for camera in cameras %}
-        <div>
-            <input type="checkbox" id="{{ camera }}" name="camera[]" value="{{ camera }}" onclick="uncheckAll()">
-            <label for="{{ camera }}">{{ camera }}</label>
-            {% if camera_settings.get(camera) %}
-                <span>Silenced until {{ camera_settings[camera] }}</span>
-                <a href="{{ url_for('clear_silence', camera_id=camera) }}">Remove Silence</a>
-            {% else %}
-                <span>No silence set</span>
-            {% endif %}
+
+<style>
+    body {
+        background-color: #2A3D45;
+        color: #333;
+    }
+
+    h1, h2, h3 {
+        color: #F3F4F6;
+    }
+
+    .card {
+        background-color: #546a73;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        border: none;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .card-body h3 {
+        color: #F3F4F6;
+        background-color: #546a73;
+    }
+
+    div[id^="silence-status-"] {
+        color: #F3F4F6;
+        background-color: #546a73;
+    }
+
+    .custom-silence-control {
+        background-color: #546a73;
+    }
+    .custom-silence-control > * {
+        margin-bottom: 10px; /* Add spacing to the bottom of each direct child element */
+    }
+
+    /* Remove the margin from the last child to avoid extra spacing */
+    .custom-silence-control > *:last-child {
+        margin-bottom: 0;
+    } 
+
+    .custom-silence-control input,
+    .custom-silence-control select,
+    .custom-silence-control button {
+        color: #F3F4F6;
+        background-color: #546a73;
+        border: 1px solid #F3F4F6;  /* You may want to adjust borders to make elements more visible */
+        min-width: 60px;
+    }
+
+    .custom-silence-control button:hover {
+        background-color: #44555c;  /* A slightly darker shade for hover on button */
+    }
+
+    button, 
+    button:hover, 
+    button:focus, 
+    button:active {
+        border-radius: 20px !important;
+        color: #F3F4F6
+    }
+
+    .silence-buttons button {
+        margin-bottom: 10px; /* This will give space between the buttons when they stack */
+        min-width: 60px; /* This will ensure a minimum width for the buttons */
+    }
+    /* Remove the margin from the last child to avoid extra spacing */
+    .silence-buttons button > *:last-child {
+        margin-bottom: 0;
+    } 
+
+    /* Styling for the silence buttons */
+    button:not(.clear-button) {
+        background-color: rgba(183, 50, 60, 0.5) !important;  /* 50% opacity */
+    }
+
+    button:not(.clear-button):hover {
+        background-color: rgba(138, 36, 50, 0.7) !important;  /* 70% opacity */
+    }
+
+    button:not(.clear-button):active {
+        background-color: rgba(97, 24, 34, 0.8) !important;  /* 80% opacity */
+    }
+
+    /* Styling for the clear buttons */
+    .clear-button {
+        background-color: rgba(50, 183, 108, 0.5);  /* 50% opacity green tint */
+    }
+
+    .clear-button:hover {
+        background-color: rgba(36, 138, 80, 0.7);  /* 70% opacity darker green */
+    }
+
+    .clear-button:active {
+        background-color: rgba(29, 106, 60, 0.8);  /* 80% opacity even darker green */
+    }
+
+    .camera-selection label {
+        margin-right: 15px;
+        color: #F3F4F6; /* Light off-white text for the camera labels */
+    }
+
+    .custom-silence-control input[type="number"] {
+        width: 33%; /* 1/3 of its original width */
+    }
+
+    div.container div.card-body div.camera-selection label {
+    color: #F3F4F6 !important;
+    }
+
+</style>
+
+<div class="container">
+    <h1 class="my-4">Silence Settings</h1>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2>Control Multiple Cameras</h2>
+            <div class="camera-selection mb-3">
+                <label><input type="checkbox" id="all_cameras" onclick="checkAllCameras()"> ALL</label>
+                {% for camera in cameras %}
+                    <label><input type="checkbox" name="camera[]" value="{{ camera }}" onclick="uncheckAllCameras()"> {{ camera }}</label>
+                {% endfor %}
+            </div>
+            <div class="silence-buttons mb-3">
+                <button onclick="setSilenceForSelected(5);"> 5 min </button>
+                <button onclick="setSilenceForSelected(15);"> 15 min </button>
+                <button onclick="setSilenceForSelected(60);"> 1 hr </button>
+                <button onclick="setSilenceForSelected(240);"> 4 hr </button>
+                <button onclick="clearSilence('{{ camera }}');" class="clear-button">Clear</button>
+            </div>
+            <div class="custom-silence-control">
+                <input type="number" id="custom-duration-selected" name="duration" placeholder="Duration">
+                <select id="duration-unit-selected" name="unit">
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                </select>
+                <button onclick="setCustomSilenceForSelected();">Set</button>
+            </div>
         </div>
-         {% endfor %}
-        <br><input type="submit" value="Submit">
-    </form>
-    <form action="/clear_all_silence" method="get">
-        <button type="submit">Remove All Silence</button>
-    </form>
+    </div>
+
+    <div class="row">
+        {% for camera in cameras %}
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3>{{ camera }}</h3>
+                    <div id="silence-status-{{ camera }}" class="mb-3">
+                        <!-- Silence status will be updated here via JavaScript -->
+                        This camera is not currently silenced.
+                    </div>
+                    <div class="silence-buttons mb-3">
+                        <!-- Silence control buttons similar to those on the Event Page -->
+                        <button onclick="setSilence('{{ camera }}', 5);">5 min</button>
+                        <button onclick="setSilence('{{ camera }}', 15);">15 min</button>
+                        <button onclick="setSilence('{{ camera }}', 60);">1 hr</button>
+                        <button onclick="setSilence('{{ camera }}', 240);">4 hr</button>
+                        <!-- ... other duration buttons ... -->
+                        <button onclick="clearSilence('{{ camera }}');" class="clear-button">Clear</button>
+                    </div>
+                    <div class="custom-silence-control">
+                        <input type="number" id="custom-duration-{{ camera }}" name="duration" placeholder="1">
+                        <select id="duration-unit-{{ camera }}" name="unit">
+                            <option value="minutes">Minutes</option>
+                            <option value="hours">Hours</option>
+                            <option value="days">Days</option>
+                        </select>
+                        <button onclick="setCustomSilence('{{ camera }}');">Set</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Include Bootstrap JS, Popper.js, and jQuery for interactive elements -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 </body>
+
 <script type="text/javascript">
     function checkAll() {
         var allCamerasCheckbox = document.getElementById('all_cameras');
@@ -41,5 +205,145 @@
     function uncheckAll() {
         document.getElementById('all_cameras').checked = false;
     }
+
+// Function to convert the custom silence duration to minutes
+function convertToMinutes(duration, unit) {
+  let minutes;
+  switch(unit) {
+    case 'minutes':
+      minutes = parseInt(duration);
+      break;
+    case 'hours':
+      minutes = parseInt(duration) * 60;
+      break;
+    case 'days':
+      minutes = parseInt(duration) * 60 * 24;
+      break;
+    default:
+      console.error('Unknown duration unit:', unit);
+      return;
+  }
+  return minutes;
+}
+
+function fetchSilenceSettings() {
+    fetch('/get_camera_silence_settings')
+        .then(response => response.json())
+        .then(data => {
+           
+            // Get all camera status elements
+            const cameraStatusDivs = document.querySelectorAll('[id^="silence-status-"]');
+            
+            cameraStatusDivs.forEach(div => {
+                const cameraName = div.id.replace('silence-status-', '');
+                const endTime = data[cameraName];
+                
+                if (endTime) {
+                    // If there is a silence end time, calculate the time remaining
+                    const endDateTime = new Date(endTime);
+                    const now = new Date();
+                    const timeRemainingMs = endDateTime - now;
+                    const hours = Math.floor(timeRemainingMs / 1000 / 60 / 60);
+                    const minutes = Math.floor((timeRemainingMs / 1000 / 60) % 60);
+                    const seconds = Math.floor((timeRemainingMs / 1000) % 60);
+                    div.innerText = `Silenced until ${endDateTime.toLocaleString()} (${hours}h ${minutes}m ${seconds}s remaining).`;
+                } else {
+                    // If there is no silence end time, update the status to show the camera is not silenced
+                    div.innerText = 'This camera is not currently silenced.';
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Failed to fetch silence settings:', error);
+        });
+}
+
+// Function to set silence for a specific camera
+function setSilence(camera, minutes) {
+  const formData = new FormData();
+  formData.append('duration', minutes);
+  formData.append('camera[]', camera);
+
+  fetch('/set_silence', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    setTimeout(() => {
+      fetchSilenceSettings();
+    }, 500);
+  });
+}
+
+
+// Function to set a custom silence duration for a specific camera
+function setCustomSilence(camera) {
+  const durationInput = document.getElementById(`custom-duration-${camera}`);
+  const unitSelect = document.getElementById(`duration-unit-${camera}`);
+  const minutes = convertToMinutes(durationInput.value, unitSelect.value);  // Assume this function exists
+  
+  setSilence(camera, minutes);
+}
+
+// Function to clear silence for a specific camera
+function clearSilence(camera) {
+  fetch(`/clear_silence/${camera}`)
+    .then(response => response.json())
+    .then(data => {
+    setTimeout(() => {
+      fetchSilenceSettings();
+    }, 500);
+  });
+}
+
+// Function to navigate back to the Event Page
+function navigateToEventPage() {
+  window.location.href = '/event';
+}
+
+// Call fetchSilenceSettings when the document is ready
+document.addEventListener('DOMContentLoaded', (event) => {
+  fetchSilenceSettings();
+});
+
+function checkAllCameras() {
+    const allCamerasCheckbox = document.getElementById('all_cameras');
+    const cameraCheckboxes = document.querySelectorAll('input[name="camera[]"]');
+    cameraCheckboxes.forEach(checkbox => {
+        checkbox.checked = allCamerasCheckbox.checked;
+    });
+}
+
+function uncheckAllCameras() {
+    if (!this.checked) {
+        document.getElementById('all_cameras').checked = false;
+    }
+}
+
+function setSilenceForSelected(minutes) {
+    const cameraCheckboxes = document.querySelectorAll('input[name="camera[]"]:checked');
+    cameraCheckboxes.forEach(checkbox => {
+        const camera = checkbox.value;
+        setSilence(camera, minutes);
+    });
+}
+
+function clearSilenceForSelected() {
+    const cameraCheckboxes = document.querySelectorAll('input[name="camera[]"]:checked');
+    cameraCheckboxes.forEach(checkbox => {
+        const camera = checkbox.value;
+        clearSilence(camera);
+    });
+}
+
+function setCustomSilenceForSelected() {
+    const durationInput = document.getElementById(`custom-duration-selected`);
+    const unitSelect = document.getElementById(`duration-unit-selected`);
+    const minutes = convertToMinutes(durationInput.value, unitSelect.value);
+    
+    setSilenceForSelected(minutes);
+}
+
 </script>
 </html>

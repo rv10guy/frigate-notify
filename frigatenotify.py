@@ -119,7 +119,7 @@ def validate_config(config):
     else:
         return True
     
-def load_config(config_file='config.yaml'):
+def load_config(config_file='/config/config.yaml'):
     try:
         with open(config_file, 'r') as f:
             return yaml.safe_load(f)
