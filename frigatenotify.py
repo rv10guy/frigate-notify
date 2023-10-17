@@ -119,7 +119,7 @@ def validate_config(config):
     else:
         return True
     
-def load_config(config_file='/config/config.yaml'):
+def load_config(config_file='config.yaml'):
     try:
         with open(config_file, 'r') as f:
             return yaml.safe_load(f)
@@ -233,8 +233,54 @@ def on_connect(client, userdata, flags, rc):
     else:
         logger.warning(f"Connected with result code {rc}")
     client.subscribe(mqtt_config['topic'])
+    for door in doors:
+        topic = door['topic']
+        client.subscribe(topic)
+        logger.info(f"Subscribed to topic: {topic} for {door}")
+
 
 def on_message(client, userdata, msg):
+    topic = msg.topic
+    
+
+    # Check if the topic is the one specified in mqtt_config
+    if topic == mqtt_config['topic']:
+        process_camera_event(msg)
+
+    # Check if the topic exists in the doors list
+    elif any(door['topic'] == topic for door in doors):
+        payload = msg.payload.decode()
+        process_door_event(payload, topic)
+
+    else:
+        logger.warning(f"Received message from unhandled topic: {topic}")
+
+def process_door_event(payload, topic):
+    # Look up the camera and door values based on the topic
+    door_entry = next((door for door in doors if door['topic'] == topic), None)
+    if door_entry is None:
+        logger.warning(f"No door entry found for topic: {topic}")
+        return
+
+    camera = door_entry['camera']
+    door_name = door_entry['door']
+
+    # Check if there's a recent detection for this camera
+    last_detection_time = detection_dict.get(camera)
+    no_detection_timeout = config['door_settings']['no_detection_timeout'] * 60
+    if last_detection_time and (datetime.datetime.now() - last_detection_time).total_seconds() < no_detection_timeout:
+        logger.info(f"No action taken, {camera} detected activity in the last {config['door_settings']['no_detection_timeout']} minutes.")
+        return
+
+    # Otherwise, silence the camera and update the detection_dict
+    silence_until = datetime.datetime.now() + datetime.timedelta(minutes=config['door_settings']['silence_period'])
+    set_silence_settings(camera, silence_until)
+    detection_dict[camera] = datetime.datetime.now()
+
+    logger.info(f"{camera} is being silenced until {silence_until} minutes because {door_name} was opened.")
+
+
+def process_camera_event(msg):
     payload = json.loads(msg.payload)
     event_type = payload["type"]
     event_data = payload["after"]
@@ -262,6 +308,7 @@ def on_message(client, userdata, msg):
 
             if (not last_alert_time) or (current_time - last_alert_time).total_seconds() >= cooldown_period:
                 cooldown_dict[camera_label_combo] = current_time  # Update the last alert time
+                detection_dict[camera] = current_time
                 
                 if event_id not in processed_events:
                     processed_events.add(event_id)
@@ -323,10 +370,12 @@ log_info = config['log_info']
 healthchecks_config = config['healthchecks']
 silence_db = config['database']
 cameras = config['cameras']
+doors = config['door_settings']['doors']
 
 processed_events = set()
 last_ping_time = None
 cooldown_dict = {}  # Initialize the cooldown dictionary
+detection_dict = {} # Intiialize the detection dictionary
 frigate_server = frigate_server_config['host']
 web_server = web_server_config['url']
 

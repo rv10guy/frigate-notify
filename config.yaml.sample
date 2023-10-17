@@ -1,21 +1,40 @@
 mqtt:
-  username: 
-  password: 
-  host: 
-  port: 
-  topic: 
-  alert_topic: 
+  username: "username"
+  password: "password"
+  host: "192.168.1.1"
+  port: 1883
+  topic: "frigate/events"
+  alert_topic: "frigate_notify/object_detected"
 pushover:
-  api_key: 
-  user_key: 
+  api_key: "12345"
+  user_key: "12345"
 healthchecks:
-  uuid: 
+  uuid: "12345"
 frigate_server:
-  host: 
+  host: "https://frigate.xyz.com"
 web_server:
-  url: 
+  url: "https://videoevents.xyz.com"
 log_info:
-  level: 
-  log_file: 
+  level: "INFO"
+  log_file: "frigatenotify.log"
   log_to_screen: true
-cooldown_period: 
+cameras:
+  - Garage
+  - Back
+  - Front
+  - Driveway
+cooldown_period: 60
+database: silence_settings.db
+door_settings:
+  silence_period: 2
+  no_detection_timeout: 2
+  doors:
+    - topic: alarm/sensor/zone_11/state
+      door: "Garage Interior Door"
+      camera: Garage
+    - topic: alarm/sensor/zone_10/state
+      door: "Front Door"
+      camera: Front
+    - topic: alarm/sensor/zone_12/state
+      door: "Back Door"
+      camera: Back
