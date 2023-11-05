@@ -265,14 +265,9 @@ def process_door_event(payload, topic):
     camera = door_entry['camera']
     door_name = door_entry['door']
 
-    # Get the current silence settings
-    silence_settings = get_silence_settings()
-
-    # Get the current time
-    current_time = datetime.datetime.now()
-
     # Check if the door in the event is already silenced
-    silence_until = silence_settings.get(camera, 0)
+    silence_until = get_silence_settings(camera)
+    current_time = datetime.datetime.now()
     if current_time < silence_until:
         # If it is silenced, simply return without changing the silence setting
         return
