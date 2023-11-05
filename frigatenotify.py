@@ -256,21 +256,48 @@ def on_message(client, userdata, msg):
         logger.warning(f"Received message from unhandled topic: {topic}")
 
 def process_door_event(payload, topic):
+
+    if payload != "ON":
+        return  # Exit the function early if the payload is not "ON"  
+
     # Look up the camera and door values based on the topic
     door_entry = next((door for door in doors if door['topic'] == topic), None)
     if door_entry is None:
         logger.warning(f"No door entry found for topic: {topic}")
         return
-
+    
     camera = door_entry['camera']
     door_name = door_entry['door']
 
-    # Check if the door in the event is already silenced
-    silence_until = get_silence_settings(camera)
-    current_time = datetime.datetime.now()
-    if current_time < silence_until:
-        # If it is silenced, simply return without changing the silence setting
-        return
+    # Get the silence settings for the desired camera
+    silence_settings = get_silence_settings(camera)
+
+    # If the silence settings were found for the desired camera
+    if silence_settings:
+        # Assume silence_settings is a list of tuples and get the first tuple
+        silence_until_tuple = silence_settings[0]
+
+        # Assume the silence_until value is the second element in the tuple
+        silence_until_str = silence_until_tuple[1]
+
+        # Convert silence_until to a datetime object
+        silence_until = datetime.datetime.strptime(silence_until_str, '%Y-%m-%d %H:%M:%S.%f')
+
+        current_time = datetime.datetime.now()
+        remaining_silence_time = silence_until - current_time
+        silence_period = datetime.timedelta(minutes=config['door_settings']['silence_period'])
+
+        if remaining_silence_time < silence_period:
+            # If the remaining silence time is less than config['door_settings']['silence_period'],
+            # reset the silence time to have at least that much time
+            new_silence_until = current_time + silence_period
+            set_silence_settings(camera, new_silence_until)
+            logger.info(f"{camera} was already silenced, extending time until {new_silence_until} because {door_name} was opened.")
+        elif remaining_silence_time >= silence_period:
+            # If the remaining silence time is longer than config['door_settings']['silence_period'],
+            # cancel the update
+            logger.info(f"{camera} has more than the silence period remaining. Ignoring the {door_name} opening trigger.")
+            return
 
     # Check if there's a recent detection for this camera
     last_detection_time = detection_dict.get(camera)
@@ -285,6 +312,7 @@ def process_door_event(payload, topic):
     detection_dict[camera] = datetime.datetime.now()
 
     logger.info(f"{camera} is being silenced until {silence_until} minutes because {door_name} was opened.")
+
 
 
 def process_camera_event(msg):
