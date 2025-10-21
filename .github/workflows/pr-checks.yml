@@ -3,7 +3,7 @@ name: PR Checks
 on:
   pull_request:
     branches:
-      - main
+      - master  # Changed from 'main' to match repository default branch
     types: [opened, synchronize, reopened]
 
 permissions:

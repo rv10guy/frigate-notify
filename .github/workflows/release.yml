@@ -3,7 +3,7 @@ name: Release and Tag
 on:
   push:
     branches:
-      - main
+      - master  # Changed from 'main' to match repository default branch
 
 permissions:
   contents: write
@@ -30,7 +30,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: patch
           initial_version: 2.0.0
-          release_branches: main
+          release_branches: master
           pre_release_branches: develop,beta
           tag_prefix: v
           # Commit message prefixes for version bumping:
