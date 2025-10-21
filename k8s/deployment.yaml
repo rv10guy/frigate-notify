@@ -14,6 +14,8 @@ spec:
       labels:
         app: frigate-notify
     spec:
+      securityContext:
+        fsGroup: 1000  # Ensure PersistentVolume has correct group ownership
       containers:
       - name: frigate-notify
         image: ghcr.io/rv10guy/frigate-notify:latest
