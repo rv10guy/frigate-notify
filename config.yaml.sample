@@ -30,9 +30,11 @@ frigate_server:
 # This is the URL that will be included in Pushover notifications
 web_server:
   url: "https://frigate-notify.txsww.com"  # This app's URL (accessible via Tailscale)
+
+# Logging Configuration
 log_info:
   level: "INFO"
-  log_file: "frigatenotify.log"
+  log_file: "/app/logs/frigatenotify.log"  # For Docker; use ./frigatenotify.log for local dev
   log_to_screen: true
 cameras:
   - Garage
@@ -40,7 +42,12 @@ cameras:
   - Front
   - Driveway
 cooldown_period: 60
-database: silence_settings.db
+
+# Database location
+# For Docker: use /data/silence_settings.db (persistent volume)
+# For local dev: use ./silence_settings.db
+database: /data/silence_settings.db
+
 door_settings:
   silence_period: 2
   no_detection_timeout: 2

@@ -1,10 +1,10 @@
-version: '3.8'
-
 services:
   frigate-notify:
     build: .
+    image: frigate-notify:latest
     container_name: frigate-notify
     restart: unless-stopped
+    user: "1000:1000"  # Match the appuser UID/GID from Dockerfile
     ports:
       - "5050:5050"
     volumes:
