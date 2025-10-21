@@ -3,6 +3,9 @@ name: Build and Push Docker Image
 on:
   release:
     types: [published]
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on version tags (e.g., v2.0.1)
   workflow_dispatch:  # Allow manual trigger
 
 permissions:
