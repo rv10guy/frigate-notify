@@ -1,21 +1,42 @@
-# Use the official Python image as the base image
-FROM python:3-slim-buster
+# Use Python 3.11 slim image
+FROM python:3.11-slim
 
-# Copy the default config.yaml into a dedicated config directory within the container
-COPY config.yaml /config/config.yaml
+LABEL org.opencontainers.image.title="Frigate Notify"
+LABEL org.opencontainers.image.description="Smart notification system for Frigate NVR with silence management"
+LABEL org.opencontainers.image.source="https://github.com/yourusername/frigate-notify"
 
-# Copy the local script directory into the container
-COPY ./frigatenotify.py /app/frigatenotify.py
-COPY ./templates /app/templates
+# Create app user for security
+RUN useradd --create-home --shell /bin/bash appuser
 
 # Set the working directory
 WORKDIR /app
 
-# Install the necessary libraries
-RUN pip install Flask paho-mqtt requests PyYAML
+# Copy application files
+COPY --chown=appuser:appuser ./frigatenotify.py /app/frigatenotify.py
+COPY --chown=appuser:appuser ./templates /app/templates
+
+# Install dependencies
+RUN pip install --no-cache-dir Flask paho-mqtt requests PyYAML
+
+# Create config, data, and logs directories
+RUN mkdir -p /config /data /app/logs && \
+    chown -R appuser:appuser /config /data /app/logs
+
+# Switch to non-root user
+USER appuser
 
 # Expose the port the app runs on
 EXPOSE 5050
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:5050/silence_settings', timeout=5)" || exit 1
+
+# Environment variables (can be overridden at runtime)
+ENV PYTHONUNBUFFERED=1
+
+# Volumes for config, database, and logs
+VOLUME ["/config", "/data", "/app/logs"]
+
 # Command to run the script
-CMD ["python", "frigatenotify.py"]
+CMD ["python", "-u", "frigatenotify.py"]

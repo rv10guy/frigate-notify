@@ -1,0 +1,55 @@
+name: Release and Tag
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.tag_version.outputs.new_tag }}
+      changelog: ${{ steps.tag_version.outputs.changelog }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+
+      - name: Bump version and create tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          initial_version: 2.0.0
+          release_branches: main
+          pre_release_branches: develop,beta
+          tag_prefix: v
+          # Commit message prefixes for version bumping:
+          # feat: or feature: -> minor version bump
+          # fix: or bugfix: -> patch version bump
+          # BREAKING CHANGE: -> major version bump
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output new version
+        run: |
+          echo "New version created: ${{ steps.tag_version.outputs.new_tag }}"
+          echo "Changelog:"
+          echo "${{ steps.tag_version.outputs.changelog }}"

@@ -1,0 +1,71 @@
+# Frigate Notify - Docker Compose Configuration
+#
+# PRODUCTION MODE (default):
+# Uses published image from GitHub Container Registry
+#
+# DEVELOPMENT MODE:
+# Uncomment the 'build: .' line below to build from local Dockerfile
+# Comment out or change the 'image:' line to 'frigate-notify:latest'
+
+services:
+  frigate-notify:
+    # build: .  # Uncomment for local development
+    image: ghcr.io/rv10guy/frigate-notify:latest  # Published image (production)
+    # image: ghcr.io/rv10guy/frigate-notify:v2.0.0  # Or pin to specific version
+    container_name: frigate-notify
+    restart: unless-stopped
+    user: "1000:1000"  # Match the appuser UID/GID from Dockerfile
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./config.yaml:/config/config.yaml:ro  # Mount your config file (read-only)
+      - frigate-notify-data:/data              # Persistent database storage
+      - frigate-notify-logs:/app/logs          # Persistent log storage
+    environment:
+      # Secrets - override these with your actual values or use .env file
+      - PUSHOVER_API_KEY=${PUSHOVER_API_KEY}
+      - PUSHOVER_USER_KEY=${PUSHOVER_USER_KEY}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - HEALTHCHECKS_UUID=${HEALTHCHECKS_UUID}
+      - FRIGATE_SERVER_HOST=${FRIGATE_SERVER_HOST}
+    env_file:
+      - .env  # Load environment variables from .env file (create from .env.example)
+    networks:
+      - frigate-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5050/silence_settings', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Mosquitto MQTT broker for testing
+  # Uncomment if you need a local MQTT broker for development
+  # mosquitto:
+  #   image: eclipse-mosquitto:latest
+  #   container_name: mosquitto
+  #   restart: unless-stopped
+  #   ports:
+  #     - "1883:1883"
+  #     - "9001:9001"
+  #   volumes:
+  #     - mosquitto-data:/mosquitto/data
+  #     - mosquitto-logs:/mosquitto/log
+  #     - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+  #   networks:
+  #     - frigate-network
+
+volumes:
+  frigate-notify-data:
+    driver: local
+  frigate-notify-logs:
+    driver: local
+  # mosquitto-data:
+  #   driver: local
+  # mosquitto-logs:
+  #   driver: local
+
+networks:
+  frigate-network:
+    driver: bridge

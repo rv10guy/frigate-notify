@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frigate-notify
+  labels:
+    app: frigate-notify
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frigate-notify
+  template:
+    metadata:
+      labels:
+        app: frigate-notify
+    spec:
+      containers:
+      - name: frigate-notify
+        image: ghcr.io/rv10guy/frigate-notify:latest
+        imagePullPolicy: Always  # Always pull latest from registry
+        ports:
+        - containerPort: 5050
+          name: http
+          protocol: TCP
+        env:
+        # Secrets from Kubernetes Secret
+        - name: PUSHOVER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: frigate-notify-secrets
+              key: pushover-api-key
+        - name: PUSHOVER_USER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: frigate-notify-secrets
+              key: pushover-user-key
+        - name: MQTT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: frigate-notify-secrets
+              key: mqtt-username
+        - name: MQTT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: frigate-notify-secrets
+              key: mqtt-password
+        - name: HEALTHCHECKS_UUID
+          valueFrom:
+            secretKeyRef:
+              name: frigate-notify-secrets
+              key: healthchecks-uuid
+              optional: true
+        - name: FRIGATE_SERVER_HOST
+          valueFrom:
+            secretKeyRef:
+              name: frigate-notify-secrets
+              key: frigate-server-host
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: data
+          mountPath: /data
+        - name: logs
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /silence_settings
+            port: http
+          initialDelaySeconds: 40
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /silence_settings
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false  # SQLite needs to write to /data
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        configMap:
+          name: frigate-notify-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: frigate-notify-data
+      - name: logs
+        emptyDir: {}
+      restartPolicy: Always
