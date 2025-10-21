@@ -1,6 +1,57 @@
-frigatenotify.log
-test.py
-Dockerfile
+# Environment files
+.env
+
+# Kubernetes secrets (keep secret.yaml.example)
+k8s/secret.yaml
+
+# Config files with potential secrets (keep config.yaml.sample)
 config.yaml
-silence_settings.db
-templates/event.html.bak
+
+# Database
+*.db
+*.db-journal
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+
+# Test files
+test.py

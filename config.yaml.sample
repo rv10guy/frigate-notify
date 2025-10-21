@@ -1,19 +1,35 @@
+# MQTT Configuration
+# Note: username and password can be overridden with environment variables:
+#   MQTT_USERNAME, MQTT_PASSWORD
 mqtt:
   username: "username"
   password: "password"
-  host: "192.168.1.1"
+  host: "mqtt.txsww.com"  # Your MQTT broker (accessible via Tailscale)
   port: 1883
   topic: "frigate/events"
   alert_topic: "frigate_notify/object_detected"
+
+# Pushover Notification Configuration
+# Note: These can be overridden with environment variables:
+#   PUSHOVER_API_KEY, PUSHOVER_USER_KEY
 pushover:
-  api_key: "12345"
-  user_key: "12345"
+  api_key: "your-pushover-api-key"
+  user_key: "your-pushover-user-key"
+
+# Healthchecks.io Configuration (optional uptime monitoring)
+# Note: Can be overridden with environment variable: HEALTHCHECKS_UUID
 healthchecks:
-  uuid: "12345"
+  uuid: "your-healthchecks-uuid"
+
+# Frigate Server Configuration
+# Note: Can be overridden with environment variable: FRIGATE_SERVER_HOST
 frigate_server:
-  host: "https://frigate.xyz.com"
+  host: "https://frigate.txsww.com"  # Your Frigate instance (accessible via Tailscale)
+
+# Web Server Configuration
+# This is the URL that will be included in Pushover notifications
 web_server:
-  url: "https://videoevents.xyz.com"
+  url: "https://frigate-notify.txsww.com"  # This app's URL (accessible via Tailscale)
 log_info:
   level: "INFO"
   log_file: "frigatenotify.log"
