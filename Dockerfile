@@ -18,9 +18,9 @@ COPY --chown=appuser:appuser ./templates /app/templates
 # Install dependencies
 RUN pip install --no-cache-dir Flask paho-mqtt requests PyYAML
 
-# Create config and data directories
-RUN mkdir -p /config /data && \
-    chown -R appuser:appuser /config /data
+# Create config, data, and logs directories
+RUN mkdir -p /config /data /app/logs && \
+    chown -R appuser:appuser /config /data /app/logs
 
 # Switch to non-root user
 USER appuser
@@ -35,8 +35,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Environment variables (can be overridden at runtime)
 ENV PYTHONUNBUFFERED=1
 
-# Volume for config and database
-VOLUME ["/config", "/data"]
+# Volumes for config, database, and logs
+VOLUME ["/config", "/data", "/app/logs"]
 
 # Command to run the script
 CMD ["python", "-u", "frigatenotify.py"]

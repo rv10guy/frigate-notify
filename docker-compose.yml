@@ -10,7 +10,7 @@ services:
     volumes:
       - ./config.yaml:/config/config.yaml:ro  # Mount your config file (read-only)
       - frigate-notify-data:/data              # Persistent database storage
-      - ./logs:/app/logs                       # Optional: persist logs
+      - frigate-notify-logs:/app/logs          # Persistent log storage
     environment:
       # Secrets - override these with your actual values or use .env file
       - PUSHOVER_API_KEY=${PUSHOVER_API_KEY}
@@ -48,6 +48,8 @@ services:
 
 volumes:
   frigate-notify-data:
+    driver: local
+  frigate-notify-logs:
     driver: local
   # mosquitto-data:
   #   driver: local
