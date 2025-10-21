@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: frigate-notify
-        image: frigate-notify:latest  # Update with your image registry
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/rv10guy/frigate-notify:latest
+        imagePullPolicy: Always  # Always pull latest from registry
         ports:
         - containerPort: 5050
           name: http

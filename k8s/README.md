@@ -7,21 +7,30 @@ This directory contains Kubernetes manifests for deploying Frigate Notify in a K
 - Kubernetes cluster (1.19+)
 - `kubectl` configured to access your cluster
 - Tailscale operator (recommended) or Tailscale sidecar
-- Docker image built and pushed to a registry accessible from your cluster
+
+**Note:** The `deployment.yaml` is already configured to use the published image from GitHub Container Registry (`ghcr.io/rv10guy/frigate-notify:latest`). No need to build the image unless you want to customize it.
 
 ## Quick Start
 
-### 1. Build and Push Docker Image
+### 1. (Optional) Use Published Image or Build Your Own
+
+**Option A: Use Published Image (Recommended)**
+
+The deployment is already configured to pull from `ghcr.io/rv10guy/frigate-notify:latest`. No action needed!
+
+**Option B: Build Custom Image**
+
+If you need to customize the code:
 
 ```bash
 # Build the image
-docker build -t your-registry/frigate-notify:latest .
+docker build -t ghcr.io/YOUR-USERNAME/frigate-notify:latest .
 
 # Push to your registry
-docker push your-registry/frigate-notify:latest
-```
+docker push ghcr.io/YOUR-USERNAME/frigate-notify:latest
 
-Update `deployment.yaml` with your image name.
+# Update deployment.yaml with your image name
+```
 
 ### 2. Create Secret
 
