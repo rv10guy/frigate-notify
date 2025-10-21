@@ -1,5 +1,8 @@
 name: Build and Push Docker Image
 
+# Note: Docker images are automatically built as part of the release workflow.
+# This standalone workflow is primarily for manual triggers or testing purposes.
+
 on:
   release:
     types: [published]
