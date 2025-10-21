@@ -1,0 +1,75 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install Flask paho-mqtt requests PyYAML
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile frigatenotify.py
+          echo "✅ Python syntax is valid"
+
+      - name: Check for required files
+        run: |
+          required_files=(
+            "frigatenotify.py"
+            "Dockerfile"
+            "docker-compose.yml"
+            "config.yaml.sample"
+            ".env.example"
+          )
+
+          missing_files=()
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              missing_files+=("$file")
+            fi
+          done
+
+          if [ ${#missing_files[@]} -ne 0 ]; then
+            echo "❌ Missing required files:"
+            printf '%s\n' "${missing_files[@]}"
+            exit 1
+          fi
+
+          echo "✅ All required files present"
+
+      - name: Validate Dockerfile
+        run: |
+          if ! grep -q "FROM python:3.11-slim" Dockerfile; then
+            echo "❌ Dockerfile should use python:3.11-slim"
+            exit 1
+          fi
+          echo "✅ Dockerfile is valid"
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ All PR checks passed!"
+          echo ""
+          echo "This PR is ready for review."

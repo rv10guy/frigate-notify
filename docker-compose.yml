@@ -1,7 +1,18 @@
+# Frigate Notify - Docker Compose Configuration
+#
+# DEVELOPMENT MODE (build locally):
+# Use 'build: .' to build the image from local Dockerfile
+#
+# PRODUCTION MODE (use published image):
+# Replace 'build: .' with:
+#   image: ghcr.io/rv10guy/frigate-notify:latest
+# Or pin to specific version:
+#   image: ghcr.io/rv10guy/frigate-notify:v2.0.0
+
 services:
   frigate-notify:
-    build: .
-    image: frigate-notify:latest
+    build: .  # For local development - remove this line to use published image
+    image: frigate-notify:latest  # Change to ghcr.io/rv10guy/frigate-notify:latest for production
     container_name: frigate-notify
     restart: unless-stopped
     user: "1000:1000"  # Match the appuser UID/GID from Dockerfile
