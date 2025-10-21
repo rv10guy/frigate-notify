@@ -309,17 +309,24 @@ def connect_to_mqtt():
 
             logger.info(f"Attempting to connect to MQTT broker at {mqtt_config['host']}:{mqtt_config['port']} (attempt #{retry_count + 1})")
 
-            client = mqtt.Client()
+            # Use new callback API version 2 with stable client ID
+            client = mqtt.Client(
+                callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+                client_id="frigate-notify",  # Stable client ID
+                clean_session=True,          # Don't persist session state
+                protocol=mqtt.MQTTv311       # Use MQTT 3.1.1 protocol
+            )
             client.on_connect = on_connect
             client.on_message = on_message
             client.on_disconnect = on_disconnect
 
             # Enable Paho logging
-            mqtt.MQTT_LOG_INFO = logging.INFO
-            client.enable_logger()
+            client.enable_logger(logger)
 
             client.username_pw_set(mqtt_config['username'], mqtt_config['password'])
-            client.connect(mqtt_config['host'], mqtt_config['port'], 60)
+
+            # Increased keepalive to 120 seconds for better stability
+            client.connect(mqtt_config['host'], mqtt_config['port'], keepalive=120)
 
             # Paho's built-in reconnect handling
             client.reconnect_delay_set(min_delay=1, max_delay=120)
@@ -327,6 +334,8 @@ def connect_to_mqtt():
             # Reset backoff on successful connection
             backoff_time = 1
             retry_count = 0
+
+            logger.info(f"MQTT connection established with client_id: frigate-notify")
 
             # This blocks until disconnect
             client.loop_forever()
@@ -356,25 +365,27 @@ def connect_to_mqtt():
         time.sleep(sleep_time)
         backoff_time = min(backoff_time * 2, max_backoff_time)
 
-def on_disconnect(client, userdata, rc):
+def on_disconnect(client, userdata, disconnect_flags, reason_code, properties):
+    """Callback for MQTT disconnection (API v2)"""
     global mqtt_connection_state
     with mqtt_state_lock:
-        if rc != 0:
+        if reason_code != 0:
             mqtt_connection_state = MQTTConnectionState.RECONNECTING
-            logger.warning(f"Unexpected MQTT disconnection. Will auto-reconnect. Error code: {rc}")
+            logger.warning(f"Unexpected MQTT disconnection. Will auto-reconnect. Reason code: {reason_code}")
         else:
             mqtt_connection_state = MQTTConnectionState.DISCONNECTED
             logger.info("MQTT client disconnected gracefully.")
 
-def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, reason_code, properties):
+    """Callback for MQTT connection (API v2)"""
     global mqtt_connection_state
     with mqtt_state_lock:
-        if rc == 0:
+        if reason_code == 0:
             mqtt_connection_state = MQTTConnectionState.CONNECTED
-            logger.info(f"Successfully connected to MQTT broker with return code {rc}")
+            logger.info(f"Successfully connected to MQTT broker. Reason code: {reason_code}")
         else:
             mqtt_connection_state = MQTTConnectionState.FAILED
-            logger.error(f"Failed to connect to MQTT broker. Return code: {rc}")
+            logger.error(f"Failed to connect to MQTT broker. Reason code: {reason_code}")
             return
 
     # Subscribe to topics (only if connection successful)
