@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 LABEL org.opencontainers.image.title="Frigate Notify"
 LABEL org.opencontainers.image.description="Smart notification system for Frigate NVR with silence management"
-LABEL org.opencontainers.image.source="https://github.com/yourusername/frigate-notify"
+LABEL org.opencontainers.image.source="https://github.com/rv10guy/frigate-notify"
 
 # Create app user for security
 RUN useradd --create-home --shell /bin/bash appuser
